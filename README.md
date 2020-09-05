@@ -16,25 +16,41 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: dummy
+  name: debug
 spec:
   containers:
-  - name: dummy
-    image: nginx
-    volumeMounts:
-    - name: ratar
-      mountPath: /data
+    - name: debug
+      image: "ubuntu"
+      command:
+      - sleep
+      - "110000000"
+      volumeMounts:
+      - name: ratar
+        mountPath: /data
+      - name: scratch
+        mountPath: /scratch
   volumes:
   - name: ratar
     flexVolume:
       driver: "janpf/ratarmount-driver"
       readOnly: true
       options:
-        archive: "/scratch/big.tar" # mandatory
+        archive: "zehe/archiv/uncategorized/coffee-gui.tgz" # mandatory
+        ceph_mount: "scratch" # reference to another volume name from which the archive will be read
         # FIXME: is it False or false?
-        recreate-index: false # default + optional
-        recursive: false # default + optional
-        debug: false # default + optional # could cause issues due to printing to stdout
+        recreate-index: "false" # default + optional
+        recursive: "false" # default + optional
+        debug: "false" # default + optional # could cause issues due to printing to stdout
+  - name: scratch
+    cephfs:
+      monitors:
+      - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
+      user: zehe
+      path: "/scratch"
+      secretRef:
+        name: ceph-secret-zehe-hadoop
+  nodeSelector:
+    kubernetes.io/hostname: vana
 ```
 
 ## dependencies
@@ -47,6 +63,6 @@ ratarmount
 ```
 
 
-rarely:
+system:
 
 `[apt-get install] fuse`
