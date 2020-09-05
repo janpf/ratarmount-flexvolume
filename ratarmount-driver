@@ -51,7 +51,6 @@ def mount(mount_dir: str, json_str: str):
         exit({"status": "Failure", "message": "ratarmount-flexvol: no tar file to mount specified"})
 
     ratarmount_params = [json_params["archive"], mount_dir]  # [mount_source, mount_point]
-    logging.info(f"{mount_dir}: used ratarmount parameters: {ratarmount_params}")
 
     if "recreate-index" in json_params.keys() and json_params["recreate-index"]:
         ratarmount_params.append("--recreate-index")
@@ -61,6 +60,8 @@ def mount(mount_dir: str, json_str: str):
 
     if "debug" in json_params.keys() and json_params["debug"]:
         ratarmount_params.append("--debug DEBUG")
+
+    logging.info(f"{mount_dir}: used ratarmount parameters: {ratarmount_params}")
 
     try:
         ratarmount.cli(args=ratarmount_params)
