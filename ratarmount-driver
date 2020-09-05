@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+
+# NOTE: Copy this script to /usr/libexec/kubernetes/kubelet-plugins/volume/exec/janpf~ratarmount-driver/ratarmount-driver
+
+import json
+import logging
+import subprocess
+from pathlib import Path
+
+import click
+import ratarmount
+
+logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S", filename="/tmp/ratarmount-flexvolume.log")
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+def init():
+    """
+    Initializes the driver. It is called during initialization of masters and nodes.
+    - Arguments: none
+    - Executed on: master, node
+    - Expected output: default JSON
+    """
+    logging.info(f"initializing")
+    print({"status": "Success", "message": "ratarmount-flexvol: initialized", "capabilities": {"attach": False}})
+
+
+@cli.command()
+@click.argument("mount_dir")
+@click.argument("json_str")
+def mount(mount_dir: str, json_str: str):
+    """
+    Mounts a volume to directory.
+    This can include anything that is necessary to mount the volume, including attaching the volume to the node, finding the its device, and then mounting the device.
+    - Arguments: <mount-dir> <json>
+    - Executed on: node
+    - Expected output: default JSON
+    """
+    logging.info(f"{mount_dir}: mounting with {json_str}")
+
+    json_params = json.loads(json_str)
+    Path(mount_dir).mkdir(parents=True, exist_ok=True)
+
+    if not "archive" in json_params.keys():
+        logging.error(f"{mount_dir}: no archive specified")
+        exit({"status": "Failure", "message": "ratarmount-flexvol: no tar file to mount specified"})
+
+    ratarmount_params = [json_params["archive"], mount_dir]  # [mount_source, mount_point]
+    logging.info(f"{mount_dir}: used ratarmount parameters: {ratarmount_params}")
+
+    if "recreate-index" in json_params.keys() and json_params["recreate-index"]:
+        ratarmount_params.append("--recreate-index")
+
+    if "recursive" in json_params.keys() and json_params["recursive"]:
+        ratarmount_params.append("--recursive")
+
+    if "debug" in json_params.keys() and json_params["debug"]:
+        ratarmount_params.append("--debug DEBUG")
+
+    try:
+        ratarmount.cli(args=ratarmount_params)
+    except Exception as e:
+        logging.error(f"{mount_dir}: {e}")
+        exit({"status": "Failure", "message": f"ratarmount-flexvol: error during mount: {e}"})
+
+    logging.info(f"{mount_dir}: mounted")
+    print({"status": "Success", "message": f"ratarmount-flexvol: mounted with {ratarmount_params}"})
+
+
+@cli.command()
+@click.argument("mount_dir")
+def unmount(mount_dir: str):
+    """
+    Unmounts a volume from a directory.
+    This can include anything that is necessary to clean up the volume after unmounting, such as detaching the volume from the node.
+    - Arguments: <mount-dir>
+    - Executed on: node
+    - Expected output: default JSON
+    """
+    logging.info(f"{mount_dir}: unmounting")
+    try:
+        proc = subprocess.run(["fusermount", "-u", mount_dir], capture_output=True, check=True)
+    except:
+        logging.error(f"{mount_dir}: stdout|{proc.stdout}")
+        logging.error(f"{mount_dir}: stderr|{proc.stdout}")
+        exit({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount of {mount_dir}: stdout:{proc.stdout} stderr: {proc.stderr}"})
+
+    try:
+        if Path(mount_dir).exists():
+            Path(mount_dir).rmdir()
+    except:
+        logging.error(f"{mount_dir}: still exists after unmount")
+        exit({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount: {mount_dir} did not get unmounted"})
+
+    logging.info(f"{mount_dir}: unmounted")
+    print({"status": "Success", "message": f"ratarmount-flexvol: unmounted {mount_dir}"})
+
+
+# possibly necessary: if yes: no more ~click~, as it's too complicated
+# def not_supported():
+#    exit({"status": "Failure", "message": f"ratarmount-flexvol: command not supported"})
+
+
+if __name__ == "__main__":
+    cli()
