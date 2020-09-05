@@ -38,8 +38,14 @@ spec:
 
 ## dependencies
 
-`click`
+python:
 
-`ratarmount`
+```
+click
+ratarmount
+```
+
+
+rarely:
 
 `[apt-get install] fuse`
