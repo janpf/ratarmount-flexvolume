@@ -9,6 +9,10 @@ from pathlib import Path
 
 import click
 import ratarmount
+import sys
+
+import sys
+sys.stderr = open('/tmp/ratarmount-flexvolume.log', 'a')
 
 logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S", filename="/tmp/ratarmount-flexvolume.log")
 
@@ -27,7 +31,14 @@ def init():
     - Expected output: default JSON
     """
     logging.info(f"initializing")
-    print({"status": "Success", "message": "ratarmount-flexvol: initialized", "capabilities": {"attach": False}})
+    
+    try:
+        proc = subprocess.check_output(["fusermount", "-V"])
+    except:
+        error({"status": "Failure", "message": "ratarmount-flexvol: fusermount not installed"})
+        sys.exit(1)
+
+    info({"status": "Success", "message": "ratarmount-flexvol: initialized", "capabilities": {"attach": False}})
 
 
 @cli.command()
@@ -48,9 +59,16 @@ def mount(mount_dir: str, json_str: str):
 
     if not "archive" in json_params.keys():
         logging.error(f"{mount_dir}: no archive specified")
-        exit({"status": "Failure", "message": "ratarmount-flexvol: no tar file to mount specified"})
+        error({"status": "Failure", "message": "ratarmount-flexvol: no tar file to mount specified"})
 
-    ratarmount_params = [json_params["archive"], mount_dir]  # [mount_source, mount_point]
+    archive = json_params["archive"]
+    if "ceph_mount" in json_params:
+        ceph_mount = json_params["ceph_mount"]
+        volume_root = Path(mount_dir).parent.parent
+        archive = str(volume_root.joinpath("kubernetes.io~cephfs").joinpath(ceph_mount).joinpath(archive))
+
+
+    ratarmount_params = [archive, mount_dir]  # [mount_source, mount_point]
 
     if "recreate-index" in json_params.keys() and json_params["recreate-index"]:
         ratarmount_params.append("--recreate-index")
@@ -59,7 +77,7 @@ def mount(mount_dir: str, json_str: str):
         ratarmount_params.append("--recursive")
 
     if "debug" in json_params.keys() and json_params["debug"]:
-        ratarmount_params.append("--debug DEBUG")
+        ratarmount_params.append("-d 1")
 
     logging.info(f"{mount_dir}: used ratarmount parameters: {ratarmount_params}")
 
@@ -67,10 +85,10 @@ def mount(mount_dir: str, json_str: str):
         ratarmount.cli(args=ratarmount_params)
     except Exception as e:
         logging.error(f"{mount_dir}: {e}")
-        exit({"status": "Failure", "message": f"ratarmount-flexvol: error during mount: {e}"})
+        error({"status": "Failure", "message": f"ratarmount-flexvol: error during mount: {e}"})
 
     logging.info(f"{mount_dir}: mounted")
-    print({"status": "Success", "message": f"ratarmount-flexvol: mounted with {ratarmount_params}"})
+    info({"status": "Success", "message": f"ratarmount-flexvol: mounted with {ratarmount_params}"})
 
 
 @cli.command()
@@ -85,27 +103,35 @@ def unmount(mount_dir: str):
     """
     logging.info(f"{mount_dir}: unmounting")
     try:
-        proc = subprocess.run(["fusermount", "-u", mount_dir], capture_output=True, check=True)
-    except:
+        proc = subprocess.run(["fusermount", "-u", mount_dir], check=True)
+    except Exception as e:
+        print(e)
         logging.error(f"{mount_dir}: stdout|{proc.stdout}")
         logging.error(f"{mount_dir}: stderr|{proc.stdout}")
-        exit({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount of {mount_dir}: stdout:{proc.stdout} stderr: {proc.stderr}"})
+        error({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount of {mount_dir}: stdout:{proc.stdout} stderr: {proc.stderr}"})
 
     try:
         if Path(mount_dir).exists():
             Path(mount_dir).rmdir()
     except:
         logging.error(f"{mount_dir}: still exists after unmount")
-        exit({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount: {mount_dir} did not get unmounted"})
+        error({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount: {mount_dir} did not get unmounted"})
 
     logging.info(f"{mount_dir}: unmounted")
-    print({"status": "Success", "message": f"ratarmount-flexvol: unmounted {mount_dir}"})
+    info({"status": "Success", "message": f"ratarmount-flexvol: unmounted {mount_dir}"})
 
 
 # possibly necessary: if yes: no more ~click~, as it's too complicated
 # def not_supported():
-#    exit({"status": "Failure", "message": f"ratarmount-flexvol: command not supported"})
+#    error({"status": "Failure", "message": f"ratarmount-flexvol: command not supported"})
 
+def info(message: str):
+    logging.info(message)
+    print(json.dumps(message))
+
+def error(message: str):
+    logging.error(message)
+    exit(json.dumps(message))
 
 if __name__ == "__main__":
     cli()
