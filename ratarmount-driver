@@ -12,7 +12,8 @@ import ratarmount
 import sys
 
 import sys
-sys.stderr = open('/tmp/ratarmount-flexvolume.log', 'a')
+
+sys.stderr = open("/tmp/ratarmount-flexvolume.log", "a")
 
 logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S", filename="/tmp/ratarmount-flexvolume.log")
 
@@ -31,7 +32,7 @@ def init():
     - Expected output: default JSON
     """
     logging.info(f"initializing")
-    
+
     try:
         proc = subprocess.check_output(["fusermount", "-V"])
     except:
@@ -66,7 +67,6 @@ def mount(mount_dir: str, json_str: str):
         ceph_mount = json_params["ceph_mount"]
         volume_root = Path(mount_dir).parent.parent
         archive = str(volume_root.joinpath("kubernetes.io~cephfs").joinpath(ceph_mount).joinpath(archive))
-
 
     ratarmount_params = [archive, mount_dir]  # [mount_source, mount_point]
 
@@ -125,13 +125,16 @@ def unmount(mount_dir: str):
 # def not_supported():
 #    error({"status": "Failure", "message": f"ratarmount-flexvol: command not supported"})
 
+
 def info(message: str):
     logging.info(message)
     print(json.dumps(message))
 
+
 def error(message: str):
     logging.error(message)
     exit(json.dumps(message))
+
 
 if __name__ == "__main__":
     cli()
