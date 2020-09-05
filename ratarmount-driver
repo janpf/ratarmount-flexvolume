@@ -120,11 +120,6 @@ def unmount(mount_dir: str):
     info({"status": "Success", "message": f"ratarmount-flexvol: unmounted {mount_dir}"})
 
 
-# possibly necessary: if yes: no more ~click~, as it's too complicated
-# def not_supported():
-#    error({"status": "Failure", "message": f"ratarmount-flexvol: command not supported"})
-
-
 def info(message: str):
     logging.info(message)
     print(json.dumps(message))
