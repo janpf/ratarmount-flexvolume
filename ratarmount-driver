@@ -31,7 +31,7 @@ def init():
     - Executed on: master, node
     - Expected output: default JSON
     """
-    logging.info(f"initializing")
+    logging.info("initializing")
 
     try:
         proc = subprocess.check_output(["fusermount", "-V"])
@@ -102,8 +102,10 @@ def unmount(mount_dir: str):
     - Expected output: default JSON
     """
     logging.info(f"{mount_dir}: unmounting")
+
     try:
-        proc = subprocess.run(["fusermount", "-u", mount_dir], check=True)
+        proc = subprocess.run(["fusermount", "-u", mount_dir], capture_output=True)
+        proc.check_returncode()
     except Exception as e:
         print(e)
         logging.error(f"{mount_dir}: stdout|{proc.stdout}")
