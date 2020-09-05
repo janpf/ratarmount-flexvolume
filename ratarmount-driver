@@ -69,14 +69,14 @@ def mount(mount_dir: str, json_str: str):
         archive = str(volume_root.joinpath("kubernetes.io~cephfs").joinpath(ceph_mount).joinpath(archive))
 
     ratarmount_params = [archive, mount_dir]  # [mount_source, mount_point]
-
-    if "recreate-index" in json_params.keys() and json_params["recreate-index"]:
+    truthy = ["true", "1", "y", "yes"]
+    if "recreate-index" in json_params.keys() and json_params["recreate-index"].lower() in truthy:
         ratarmount_params.append("--recreate-index")
 
-    if "recursive" in json_params.keys() and json_params["recursive"]:
+    if "recursive" in json_params.keys() and json_params["recursive"].lower() in truthy:
         ratarmount_params.append("--recursive")
 
-    if "debug" in json_params.keys() and json_params["debug"]:
+    if "debug" in json_params.keys() and json_params["debug"].lower() in truthy:
         ratarmount_params.append("-d 1")
 
     logging.info(f"{mount_dir}: used ratarmount parameters: {ratarmount_params}")
