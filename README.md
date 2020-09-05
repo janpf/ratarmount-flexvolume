@@ -31,9 +31,10 @@ spec:
       readOnly: true
       options:
         archive: "/scratch/big.tar" # mandatory
-        recreate-index: False # default + optional
-        recursive: False # default + optional
-        debug: False # default + optional # could cause issues due to printing to stdout
+        # FIXME: is it False or false?
+        recreate-index: false # default + optional
+        recursive: false # default + optional
+        debug: false # default + optional # could cause issues due to printing to stdout
 ```
 
 ## dependencies
