@@ -11,8 +11,6 @@ import click
 import ratarmount
 import sys
 
-import sys
-
 sys.stderr = open("/tmp/ratarmount-flexvolume.log", "a")
 
 logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S", filename="/tmp/ratarmount-flexvolume.log")
