@@ -10,6 +10,32 @@
 
 [offical examples incl. yaml](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-storage/flexvolume.md)
 
+## usage:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dummy
+spec:
+  containers:
+  - name: dummy
+    image: nginx
+    volumeMounts:
+    - name: ratar
+      mountPath: /data
+  volumes:
+  - name: ratar
+    flexVolume:
+      driver: "janpf/ratarmount-driver"
+      readOnly: true
+      options:
+        archive: "/scratch/big.tar" # mandatory
+        recreate-index: False # default + optional
+        recursive: False # default + optional
+        debug: False # default + optional # could cause issues due to printing to stdout
+```
+
 ## dependencies
 
 `click`
