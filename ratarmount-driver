@@ -32,7 +32,7 @@ def init():
     logging.info("initializing")
 
     try:
-        proc = subprocess.check_output(["fusermount", "-V"])
+        subprocess.check_output(["fusermount", "-V"])
     except:
         error({"status": "Failure", "message": "ratarmount-flexvol: fusermount not installed"})
 
@@ -101,13 +101,10 @@ def unmount(mount_dir: str):
     logging.info(f"{mount_dir}: unmounting")
 
     try:
-        proc = subprocess.run(["fusermount", "-u", mount_dir], capture_output=True)
-        proc.check_returncode()
+        subprocess.run(["fusermount", "-u", mount_dir], check=True)
     except Exception as e:
-        print(e)
-        logging.error(f"{mount_dir}: stdout|{proc.stdout}")
-        logging.error(f"{mount_dir}: stderr|{proc.stdout}")
-        error({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount of {mount_dir}: stdout:{proc.stdout} stderr: {proc.stderr}"})
+        logging.error(f"{mount_dir}: {e}")
+        error({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount of {mount_dir}: {e}"})
 
     try:
         if Path(mount_dir).exists():
