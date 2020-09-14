@@ -35,7 +35,8 @@ spec:
       driver: "janpf/ratarmount-driver"
       readOnly: true
       options:
-        archive: "zehe/archiv/uncategorized/coffee-gui.tgz" # mandatory
+        # multiple archives can be mounted by separating them with a ";"
+        archive: "zehe/archiv/uncategorized/coffee-gui.tgz;zehe/archiv/uncategorized/coffee-gui2.tgz" # mandatory.
         ceph_mount: "scratch" # reference to another volume name from which the archive will be read
         recreate-index: "false" # default: false # optional
         recursive: "false" # default: false # optional

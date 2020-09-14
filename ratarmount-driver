@@ -5,11 +5,12 @@
 import json
 import logging
 import subprocess
+import sys
 from pathlib import Path
+from typing import Dict
 
 import click
 import ratarmount
-import sys
 
 sys.stderr = open("/tmp/ratarmount-flexvolume.log", "a")
 
@@ -52,20 +53,22 @@ def mount(mount_dir: str, json_str: str):
     """
     logging.info(f"{mount_dir}: mounting with {json_str}")
 
-    json_params = json.loads(json_str)
+    json_params: Dict[str, str] = json.loads(json_str)
     Path(mount_dir).mkdir(parents=True, exist_ok=True)
 
     if not "archive" in json_params.keys():
         logging.error(f"{mount_dir}: no archive specified")
         error({"status": "Failure", "message": "ratarmount-flexvol: no tar file to mount specified"})
 
-    archive = json_params["archive"]
+    archives = json_params["archive"].split(";")
+    archives = [tar.strip() for tar in archives]
+
     if "ceph_mount" in json_params:
         ceph_mount = json_params["ceph_mount"]
         volume_root = Path(mount_dir).parent.parent
-        archive = str(volume_root.joinpath("kubernetes.io~cephfs").joinpath(ceph_mount).joinpath(archive))
+        archives = [str(volume_root / "kubernetes.io~cephfs" / ceph_mount / tar) for tar in archives]
 
-    ratarmount_params = [archive, mount_dir]  # [mount_source, mount_point]
+    ratarmount_params = archives + [mount_dir]
     truthy = ["true", "1", "y", "yes"]
     if "recreate-index" in json_params.keys() and json_params["recreate-index"].lower() in truthy:
         ratarmount_params.append("--recreate-index")
