@@ -37,9 +37,9 @@ spec:
       options:
         archive: "zehe/archiv/uncategorized/coffee-gui.tgz" # mandatory
         ceph_mount: "scratch" # reference to another volume name from which the archive will be read
-        recreate-index: "false" # default + optional
-        recursive: "false" # default + optional
-        debug: "false" # default + optional # could cause issues due to printing to stdout
+        recreate-index: "false" # default: false # optional
+        recursive: "false" # default: false # optional
+        debug: "false" # default: false # optional
   - name: scratch
     cephfs:
       monitors:
