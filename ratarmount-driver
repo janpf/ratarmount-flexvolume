@@ -83,7 +83,7 @@ def mount(mount_dir: str, json_str: str):
         volume_root = Path(mount_dir).parent.parent
         archives = [str(volume_root / "kubernetes.io~cephfs" / ceph_mount / tar) for tar in archives]
 
-    ratarmount_params: list[str] = ["-o", "allow_other"] + archives + [mount_dir]
+    ratarmount_params = ["--fuse", "allow_other"] + ["--parallelization", "2"] + archives + [mount_dir]
     truthy = ["true", "1", "y", "yes"]
     if "recreate-index" in json_params.keys() and json_params["recreate-index"].lower() in truthy:
         ratarmount_params.append("--recreate-index")
@@ -97,7 +97,7 @@ def mount(mount_dir: str, json_str: str):
     logging.info(f"{mount_dir}: used ratarmount parameters: {ratarmount_params}")
 
     try:
-        ratarmount.cli(args=ratarmount_params)
+        ratarmount.cli(rawArgs=ratarmount_params)
     except Exception as e:
         logging.error(f"{mount_dir}: {e}")
         error({"status": "Failure", "message": f"ratarmount-flexvol: error during mount: {e}"})
