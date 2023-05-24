@@ -14,7 +14,22 @@ import ratarmount
 
 sys.stderr = open("/tmp/ratarmount-flexvolume.log", "a")
 
-logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S", filename="/tmp/ratarmount-flexvolume.log")
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename="/tmp/ratarmount-flexvolume.log",
+)
+
+
+def info(message: str):
+    logging.info(message)
+    print(json.dumps(message))
+
+
+def error(message: str):
+    logging.error(message)
+    exit(json.dumps(message))
 
 
 @click.group()
@@ -62,13 +77,13 @@ def mount(mount_dir: str, json_str: str):
 
     archives = json_params["archive"].split(";")
     archives = [tar.strip() for tar in archives]
-
+    logging.info(str(archives))
     if "ceph_mount" in json_params:
         ceph_mount = json_params["ceph_mount"]
         volume_root = Path(mount_dir).parent.parent
         archives = [str(volume_root / "kubernetes.io~cephfs" / ceph_mount / tar) for tar in archives]
 
-    ratarmount_params = archives + [mount_dir]
+    ratarmount_params: list[str] = ["-o", "allow_other"] + archives + [mount_dir]
     truthy = ["true", "1", "y", "yes"]
     if "recreate-index" in json_params.keys() and json_params["recreate-index"].lower() in truthy:
         ratarmount_params.append("--recreate-index")
@@ -114,20 +129,15 @@ def unmount(mount_dir: str):
             Path(mount_dir).rmdir()
     except:
         logging.error(f"{mount_dir}: still exists after unmount")
-        error({"status": "Failure", "message": f"ratarmount-flexvol: error during unmount: {mount_dir} did not get unmounted"})
+        error(
+            {
+                "status": "Failure",
+                "message": f"ratarmount-flexvol: error during unmount: {mount_dir} did not get unmounted",
+            }
+        )
 
     logging.info(f"{mount_dir}: unmounted")
     info({"status": "Success", "message": f"ratarmount-flexvol: unmounted {mount_dir}"})
-
-
-def info(message: str):
-    logging.info(message)
-    print(json.dumps(message))
-
-
-def error(message: str):
-    logging.error(message)
-    exit(json.dumps(message))
 
 
 if __name__ == "__main__":
