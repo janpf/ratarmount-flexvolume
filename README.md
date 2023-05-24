@@ -1,15 +1,5 @@
 # ratarmount-flexvolume
 
-## relevant documentation:
-
-[openshift](https://docs.openshift.com/container-platform/3.11/install_config/persistent_storage/persistent_storage_flex_volume.html)
-
-[leebriggs](http://leebriggs.co.uk/blog/2017/03/12/kubernetes-flexvolumes.html)
-
-[example](https://github.com/almonteb/k8s-flexvol-archive/blob/master/archive)
-
-[offical examples incl. yaml](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-storage/flexvolume.md)
-
 ## usage:
 
 ```yaml
@@ -49,9 +39,17 @@ spec:
       path: "/scratch"
       secretRef:
         name: ceph-secret-zehe-hadoop
-  nodeSelector:
-    kubernetes.io/hostname: vana
 ```
+
+## relevant flexvolume documentation:
+
+[openshift](https://docs.openshift.com/container-platform/3.11/install_config/persistent_storage/persistent_storage_flex_volume.html)
+
+[leebriggs](http://leebriggs.co.uk/blog/2017/03/12/kubernetes-flexvolumes.html)
+
+[flexvolume example](https://github.com/almonteb/k8s-flexvol-archive/blob/master/archive)
+
+[flexvolume examples incl. yaml](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-storage/flexvolume.md)
 
 ## dependencies
 
@@ -66,3 +64,4 @@ ratarmount
 system:
 
 `[apt-get install] fuse`
+`[yum install] fuse python3-devel zlib-devel`
