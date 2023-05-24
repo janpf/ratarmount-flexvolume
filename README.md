@@ -65,4 +65,4 @@ system:
 
 `[apt-get install] fuse`
 
-`[yum install] fuse python3-devel zlib-devel libzstd-devel`
+`[yum install] fuse python3-devel zlib-devel libzstd-devel gcc-c++`
