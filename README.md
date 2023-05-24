@@ -64,4 +64,5 @@ ratarmount
 system:
 
 `[apt-get install] fuse`
-`[yum install] fuse python3-devel zlib-devel`
+
+`[yum install] fuse python3-devel zlib-devel libzstd-devel`
