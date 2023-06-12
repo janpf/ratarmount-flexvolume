@@ -75,10 +75,18 @@ def mount(mount_dir: str, json_str: str):
         logging.error(f"{mount_dir}: no archive specified")
         error({"status": "Failure", "message": "ratarmount-flexvol: no tar file to mount specified"})
 
+    if ".." in json_params["archive"]:
+        logging.error(f"{mount_dir}: invalid archive specified")
+        error({"status": "Failure", "message": "ratarmount-flexvol: invalid archive specified"})
+
     archives = json_params["archive"].split(";")
     archives = [tar.strip() for tar in archives]
     logging.info(str(archives))
+
     if "ceph_mount" in json_params:
+        if ".." in json_params["ceph_mount"]:
+            logging.error(f"{mount_dir}: invalid ceph_mount specified")
+            error({"status": "Failure", "message": "ratarmount-flexvol: invalid ceph_mount specified"})
         ceph_mount = json_params["ceph_mount"]
         volume_root = Path(mount_dir).parent.parent
         archives = [str(volume_root / "kubernetes.io~cephfs" / ceph_mount / tar) for tar in archives]
