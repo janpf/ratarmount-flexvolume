@@ -89,7 +89,7 @@ def mount(mount_dir: str, json_str: str):
         volume_root = Path(mount_dir).parent.parent
         zipfile = str(volume_root / "kubernetes.io~cephfs" / ceph_mount / zipfile)
 
-    fusezip_params = ""
+    fusezip_params = "-o allow_other"
     truthy = ["true", "1", "y", "yes"]
 
     # TODO mount options via fuse system
