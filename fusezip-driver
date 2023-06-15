@@ -106,13 +106,21 @@ def mount(mount_dir: str, json_str: str):
     logging.info(f"{mount_dir}: used fusezip parameters: {fusezip_params}")
 
     try:
-        subprocess.run(["fuse-zip", fusezip_params, zipfile, ceph_mount], check=True)
+        # TODO no fusezip_params yet.
+        process = subprocess.Popen(["fuse-zip", zipfile, mount_dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, process.args, output=stdout, stderr=stderr)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"{mount_dir}: {e} - Output: {e.output} - Error: {e.stderr}")
+        error({"status": "Failure", "message": f"fusezip-flexvol: error during mount: {e} - Output: {e.output.decode()} - Error: {e.stderr.decode()}"})
     except Exception as e:
         logging.error(f"{mount_dir}: {e}")
         error({"status": "Failure", "message": f"fusezip-flexvol: error during mount: {e}"})
 
     logging.info(f"{mount_dir}: mounted")
     info({"status": "Success", "message": f"fusezip-flexvol: mounted with {fusezip_params}"})
+
 
 
 @cli.command()
