@@ -106,7 +106,7 @@ def mount(mount_dir: str, json_str: str):
     logging.info(f"{mount_dir}: used fusezip parameters: {fusezip_params}")
 
     try:
-        subprocess.run(["fusezip", fusezip_params, zipfile, mountpoint], check=True)
+        subprocess.run(["fusezip", fusezip_params, zipfile, ceph_mount], check=True)
     except Exception as e:
         logging.error(f"{mount_dir}: {e}")
         error({"status": "Failure", "message": f"fusezip-flexvol: error during mount: {e}"})
