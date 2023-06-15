@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+
+# NOTE: Copy this script to /usr/libexec/kubernetes/kubelet-plugins/volume/exec/janpf~ratarmount-driver/fuse-zp-driver
+
+import json
+import logging
+import subprocess
+import sys
+from pathlib import Path
+from typing import Dict
+
+import click
+
+sys.stderr = open("/tmp/fusezip-flexvolume.log", "a")
+
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename="/tmp/fusezip-flexvolume.log",
+)
+
+
+def info(message: str):
+    logging.info(message)
+    print(json.dumps(message))
+
+
+def error(message: str):
+    logging.error(message)
+    exit(json.dumps(message))
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+def init():
+    """
+    Initializes the driver. It is called during initialization of masters and nodes.
+    - Arguments: none
+    - Executed on: master, node
+    - Expected output: default JSON
+    """
+    logging.info("initializing")
+
+    try:
+        subprocess.check_output(["fusermount", "-V"])
+    except:
+        error({"status": "Failure", "message": "fusezip-flexvol: fusermount not installed"})
+
+    info({"status": "Success", "message": "fusezip-flexvol: initialized", "capabilities": {"attach": False}})
+
+
+@cli.command()
+@click.argument("mount_dir")
+@click.argument("json_str")
+def mount(mount_dir: str, json_str: str):
+    """
+    Mounts a volume to directory.
+    This can include anything that is necessary to mount the volume, including attaching the volume to the node, finding the its device, and then mounting the device.
+    - Arguments: <mount-dir> <json>
+    - Executed on: node
+    - Expected output: default JSON
+    """
+    logging.info(f"{mount_dir}: mounting with {json_str}")
+
+    json_params: Dict[str, str] = json.loads(json_str)
+    Path(mount_dir).mkdir(parents=True, exist_ok=True)
+
+    if not "archive" in json_params.keys():
+        logging.error(f"{mount_dir}: no archive specified")
+        error({"status": "Failure", "message": "fuse-zp-flexvol: no tar file to mount specified"})
+
+    if ".." in json_params["archive"]:
+        logging.error(f"{mount_dir}: invalid archive specified")
+        error({"status": "Failure", "message": "fusezip-flexvol: invalid archive specified"})
+
+    zipfile = json_params["archive"].strip()
+    logging.info(str(zipfile))
+
+    if "ceph_mount" in json_params:
+        if ".." in json_params["ceph_mount"]:
+            logging.error(f"{mount_dir}: invalid ceph_mount specified")
+            error({"status": "Failure", "message": "fusezip-flexvol: invalid ceph_mount specified"})
+        ceph_mount = json_params["ceph_mount"]
+        volume_root = Path(mount_dir).parent.parent
+        zipfile = str(volume_root / "kubernetes.io~cephfs" / ceph_mount / zipfile)
+
+    fusezip_params = ""
+    truthy = ["true", "1", "y", "yes"]
+
+    # TODO mount options via fuse system
+
+    if "readonly" in json_params.keys() and json_params["readonly"].lower() in truthy:
+        fusezip_params += " -r"
+
+    if "no-detach" in json_params.keys() and json_params["no-detach"].lower() in truthy:
+        fusezip_params += " -f"
+
+    if "debug" in json_params.keys() and json_params["debug"].lower() in truthy:
+        fusezip_params += " -d"
+
+    logging.info(f"{mount_dir}: used fusezip parameters: {fusezip_params}")
+
+    try:
+        subprocess.run(["fusezip", fusezip_params, zipfile, mountpoint], check=True)
+    except Exception as e:
+        logging.error(f"{mount_dir}: {e}")
+        error({"status": "Failure", "message": f"fusezip-flexvol: error during mount: {e}"})
+
+    logging.info(f"{mount_dir}: mounted")
+    info({"status": "Success", "message": f"fusezip-flexvol: mounted with {fusezip_params}"})
+
+
+@cli.command()
+@click.argument("mount_dir")
+def unmount(mount_dir: str):
+    """
+    Unmounts a volume from a directory.
+    This can include anything that is necessary to clean up the volume after unmounting, such as detaching the volume from the node.
+    - Arguments: <mount-dir>
+    - Executed on: node
+    - Expected output: default JSON
+    """
+    logging.info(f"{mount_dir}: unmounting")
+
+    try:
+        subprocess.run(["fusermount", "-u", mount_dir], check=True)
+    except Exception as e:
+        logging.error(f"{mount_dir}: {e}")
+        error({"status": "Failure", "message": f"fusezip-flexvol: error during unmount of {mount_dir}: {e}"})
+
+    try:
+        if Path(mount_dir).exists():
+            Path(mount_dir).rmdir()
+    except:
+        logging.error(f"{mount_dir}: still exists after unmount")
+        error(
+            {
+                "status": "Failure",
+                "message": f"fusezip-flexvol: error during unmount: {mount_dir} did not get unmounted",
+            }
+        )
+
+    logging.info(f"{mount_dir}: unmounted")
+    info({"status": "Success", "message": f"fusezip-flexvol: unmounted {mount_dir}"})
+
+
+if __name__ == "__main__":
+    cli()
