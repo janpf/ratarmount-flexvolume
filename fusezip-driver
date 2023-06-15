@@ -89,25 +89,25 @@ def mount(mount_dir: str, json_str: str):
         volume_root = Path(mount_dir).parent.parent
         zipfile = str(volume_root / "kubernetes.io~cephfs" / ceph_mount / zipfile)
 
-    fusezip_params = "-o allow_other"
+    fusezip_params = ["-o", "allow_other"]
     truthy = ["true", "1", "y", "yes"]
 
     # TODO mount options via fuse system
 
     if "readonly" in json_params.keys() and json_params["readonly"].lower() in truthy:
-        fusezip_params += " -r"
+        fusezip_params += ["-r"]
 
     if "no-detach" in json_params.keys() and json_params["no-detach"].lower() in truthy:
-        fusezip_params += " -f"
+        fusezip_params += ["-f"]
 
     if "debug" in json_params.keys() and json_params["debug"].lower() in truthy:
-        fusezip_params += " -d"
+        fusezip_params += ["-d"]
 
     logging.info(f"{mount_dir}: used fusezip parameters: {fusezip_params}")
 
     try:
         # TODO no fusezip_params yet.
-        process = subprocess.Popen(["fuse-zip", zipfile, mount_dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(["fuse-zip", *fusezip_params, zipfile, mount_dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if process.returncode != 0:
             raise subprocess.CalledProcessError(process.returncode, process.args, output=stdout, stderr=stderr)
