@@ -23,12 +23,12 @@ logging.basicConfig(
 )
 
 
-def info(message: str):
+def info(message: dict):
     logging.info(message)
     print(json.dumps(message))
 
 
-def error(message: str):
+def error(message: dict):
     logging.error(message)
     exit(json.dumps(message))
 
@@ -90,7 +90,7 @@ def mount(mount_dir: str, json_str: str):
         error({"status": "Failure", "message": "ratarmount-flexvol: multiple mounts specified (e.g. ceph_mount and nfs_mount)"})
     if sum([f"{mnt}_mount" in json_params for mnt in supported_mounts]) == 0:
         logging.error(f"{mount_dir}: no mount specified")
-        error({"status": "Failure", "message": "ratarmount-flexvol: no supported mount specified (e.g. ceph_mount or nfs_mount)"}
+        error({"status": "Failure", "message": "ratarmount-flexvol: no supported mount specified (e.g. ceph_mount or nfs_mount)"})
 
     if "ceph_mount" in json_params:
         if ".." in json_params["ceph_mount"]:
