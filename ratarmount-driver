@@ -4,6 +4,7 @@
 
 import json
 import logging
+from re import S
 import subprocess
 import sys
 from pathlib import Path
@@ -83,6 +84,14 @@ def mount(mount_dir: str, json_str: str):
     archives = [tar.strip() for tar in archives]
     logging.info(str(archives))
 
+    supported_mounts = ["ceph", "nfs"]
+    if sum([f"{mnt}_mount" in json_params for mnt in supported_mounts]) > 1:
+        logging.error(f"{mount_dir}: multiple mounts specified")
+        error({"status": "Failure", "message": "ratarmount-flexvol: multiple mounts specified (e.g. ceph_mount and nfs_mount)"})
+    if sum([f"{mnt}_mount" in json_params for mnt in supported_mounts]) == 0:
+        logging.error(f"{mount_dir}: no mount specified")
+        error({"status": "Failure", "message": "ratarmount-flexvol: no supported mount specified (e.g. ceph_mount or nfs_mount)"}
+
     if "ceph_mount" in json_params:
         if ".." in json_params["ceph_mount"]:
             logging.error(f"{mount_dir}: invalid ceph_mount specified")
@@ -90,6 +99,15 @@ def mount(mount_dir: str, json_str: str):
         ceph_mount = json_params["ceph_mount"]
         volume_root = Path(mount_dir).parent.parent
         archives = [str(volume_root / "kubernetes.io~cephfs" / ceph_mount / tar) for tar in archives]
+
+    elif "nfs_mount" in json_params:
+        if ".." in json_params["nfs_mount"]:
+            logging.error(f"{mount_dir}: invalid nfs_mount specified")
+            error({"status": "Failure", "message": "ratarmount-flexvol: invalid nfs_mount specified"})
+        nfs_mount = json_params["nfs_mount"]
+        volume_root = Path(mount_dir).parent.parent
+        archives = [str(volume_root / "kubernetes.io~nfs" / nfs_mount / tar) for tar in archives]
+
 
     ratarmount_params = ["--fuse", "allow_other"] + ["--parallelization", "2"] + archives + [mount_dir]
     truthy = ["true", "1", "y", "yes"]
